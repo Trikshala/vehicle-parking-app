@@ -1,0 +1,52 @@
+body {
+    background-color: #94B4C1;
+}
+
+.navbar {
+    width: 100%;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    background-color: #213448;
+}
+
+.navbar .nav-link,.navbar .navbar-brand, li{
+    color: aliceblue !important;
+}
+
+.btn {
+    color: aliceblue !important;
+    padding-right: 8%;
+    margin-right: 25px;
+}
+
+.form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 80%;
+    margin: 0 auto;
+}
+
+.form-container form {
+    width: 100%;
+    max-width: 500px;
+}
+
+.form-submit {
+    width: 100%;
+    border-radius: 30px;
+}
+
+.mb-3 .form-control {
+    margin-bottom: 9px;
+    border-radius: 30px;
+    margin-top: 9px;
+}
+
+.form-login{
+    margin-top: 40px;
+}
+
+p{
+    margin-top: 20px;
+}

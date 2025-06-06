@@ -1,15 +1,30 @@
 from . import db
 from datetime import datetime
+from vehicle import bcrypt
+from flask_login import UserMixin
 
-class User(db.Model):
-    user_id = db.Column(db.Integer(), primary_key = True)
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer(), primary_key = True)
     username = db.Column(db.String(length=20), nullable = False, unique = True)
-    password = db.Column(db.String(length=30), nullable = False)
+    password_hash = db.Column(db.String(length=30), nullable = False)
     email_address =  db.Column(db.String(length=40), nullable = False, unique = True)
-    conatct_number = db.Column(db.String(10), nullable= True, unique = True)
+    contact_number = db.Column(db.String(10), nullable= True, unique = True)
     address = db.Column(db.String(length=50), nullable = False)
     is_admin = db.Column(db.Boolean(), default = 0)
     reservations = db.relationship('Reservation', backref = 'user', lazy = True)
+
+    @property
+    def password(self):
+        return self.password_hash
+    
+    @password.setter
+    def password(self, plain_text_password):
+        self.password_hash = bcrypt.generate_password_hash(plain_text_password).decode('utf-8')
+
+    def check_password(self, password_to_check):
+        return bcrypt.check_password_hash(self.password_hash, password_to_check)
+
+
 
 class ParkingLot(db.Model):
     lot_id = db.Column(db.Integer(), primary_key = True)
@@ -28,7 +43,7 @@ class ParkingSpot(db.Model):
 
 class Reservation(db.Model):
     r_id = db.Column(db.Integer(), primary_key = True)
-    user_id = db.Column(db.Integer(), db.ForeignKey('user.user_id'))
+    user_id = db.Column(db.Integer(), db.ForeignKey('user.id'))
     spot_id = db.Column(db.Integer(), db.ForeignKey('parking_spot.spot_id'))
     checkin_time = db.Column(db.DateTime, default = datetime.utcnow)
     checkout_time = db.Column(db.DateTime, nullable = False)
