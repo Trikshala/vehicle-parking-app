@@ -5,11 +5,14 @@ from flask_login import UserMixin
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer(), primary_key = True)
+    first_name = db.Column(db.String(50), nullable = False)
+    last_name = db.Column(db.String(50), nullable = False)
+    email_address =  db.Column(db.String(length=60), nullable = False, unique = True)
     username = db.Column(db.String(length=20), nullable = False, unique = True)
     password_hash = db.Column(db.String(length=30), nullable = False)
-    email_address =  db.Column(db.String(length=40), nullable = False, unique = True)
     contact_number = db.Column(db.String(10), nullable= True, unique = True)
-    address = db.Column(db.String(length=50), nullable = False)
+    address = db.Column(db.String(length=100), nullable = False)
+    pincode = db.Column(db.String(6), nullable = False)
     is_admin = db.Column(db.Boolean(), default = 0)
     reservations = db.relationship('Reservation', backref = 'user', lazy = True)
 
@@ -23,7 +26,10 @@ class User(db.Model, UserMixin):
 
     def check_password(self, password_to_check):
         return bcrypt.check_password_hash(self.password_hash, password_to_check)
-
+    
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
 
 
 class ParkingLot(db.Model):

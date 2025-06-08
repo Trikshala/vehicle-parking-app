@@ -21,7 +21,7 @@ with app.app_context():
     from vehicle.models import User
     db.create_all()
     if not User.query.filter_by(is_admin = True).first():
-        admin = User(username = 'admin',email_address = 'adminvp@gmail.com',contact_number = '9988776655',address = 'Admin Headquarters, XYZ',is_admin = True)
+        admin = User(first_name = 'John', last_name = 'Doe',email_address = 'adminvp@gmail.com',username = 'admin',contact_number = '9988776655',address = 'Admin Headquarters, XYZ', pincode = '501011',is_admin = True)
         admin.password= 'admin-vp101'
         db.session.add(admin)
         db.session.commit()

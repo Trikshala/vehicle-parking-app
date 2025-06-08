@@ -33,10 +33,10 @@
                     {% if current_user.is_authenticated %}
                     {% if current_user.is_admin %}
                     <li class="nav-item">
-                        <a class="nav-link active" href="#">Home</a>
+                        <a class="nav-link active" href="{{url_for('admin_home')}}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Users</a>
+                        <a class="nav-link" href="{{url_for('display_users')}}">Users</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">Search</a>

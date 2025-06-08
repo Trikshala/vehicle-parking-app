@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}
+Registered Users
+{% endblock %}
+
+{% block content %}
+<div class="row" style="margin-top: 30px; margin-left: 30px;">
+    <div class="col-8">
+        <h2>Registered Users Details</h2>
+        <br>
+        <table class="table table-hover table-dark">
+            <thead>
+                <tr>
+                    <th scope="col">S.No</th>
+                    <th scope="col">Full Name</th>
+                    <th scope="col">Email Address</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Contact Number</th>
+                    <th scope="col">Address</th>
+                    <th scope="col">Pincode</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{user.full_name}}</td>
+                    <td>{{user.email_address}}</td>
+                    <td>{{user.username}}</td>
+                    <td>{{user.contact_number}}</td>
+                    <td>{{user.address}}</td>
+                    <td>{{user.pincode}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
