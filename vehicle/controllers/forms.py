@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, IntegerField, DecimalField
+from wtforms import StringField, PasswordField, SubmitField, IntegerField, DecimalField, SelectField, HiddenField
 from wtforms.validators import Length, EqualTo, Email, DataRequired, ValidationError, Regexp, NumberRange
 from vehicle.models import User, ParkingLot
 
@@ -48,7 +48,25 @@ class CreateParkingLotForm(FlaskForm):
             raise ValidationError('Parking lot with this Location already exists!.')
 
 class DeleteParkingLotForm(FlaskForm):
-    submit = submit = SubmitField(label="Delete Parking Lot")
+    submit = SubmitField(label="Delete Parking Lot")
+
+class SearchParkingLot(FlaskForm):
+    location = SelectField(label = 'Select Location', choices = [])
+    submit = SubmitField(label="Search")
+
+class BookingForm(FlaskForm):
+    lot_id = StringField(label = 'Lot Id', render_kw={'read_only': True})
+    spot_id = StringField(label = 'Lot Id', render_kw={'read_only': True})
+    user_id = StringField(label = 'Lot Id', render_kw={'read_only': True})
+    cost_per_hour = StringField(label = 'Lot Id', render_kw={'read_only': True})
+    no_of_hours = IntegerField(label='Number of hours:', validators=[DataRequired()])
+    vehicle_model = StringField(label='Vehicle Model:', validators=[DataRequired()])
+    vehicle_number = StringField(label='Vehicle Number:', validators=[DataRequired()])
+    submit = SubmitField('Book The Spot')
+
+class ReleaseSpotForm(FlaskForm):
+    r_id = HiddenField()
+    submit = SubmitField(label='Release')
 
 
     

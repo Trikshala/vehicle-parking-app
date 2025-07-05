@@ -13,9 +13,9 @@ Home
                 <div class="card-body">
                     <h5 class="card-title">Parking Lot #{{ lot.lot_id }} - {{lot.primary_location}}</h5>
                     <div class="d-flex flex-wrap justify-content-center mb-3">
-                        {% for spot in lot.parking_spots %}
+                        {% for spot in lot.parking_spots|sort(attribute='spot_index') %}
                         {% if spot.status == 'O' %}
-                        <button class="btn btn-sm btn-danger m-1" data-bs-toggle=""="modal"
+                        <button class="btn btn-sm btn-danger m-1" data-bs-toggle="modal"
                             data-bs-target="#viewSpotModal{{ spot.spot_id }}">O</button>
                         {% else %}
                         <button class="btn btn-sm btn-success m-1" data-bs-toggle="modal"
@@ -36,8 +36,8 @@ Home
                                     <div class="modal-body">
                                         ID: <label>{{spot.spot_id}} </label><br>
                                         {% if spot.status == 'O' %}
-                                        Spot Status : <button type="button"
-                                            class="btn btn-dark" data-bs-toggle="modal" data-bs-target="viewReservationModalLabel{{ spot.spot_id }}">{{spot.status}}</button>
+                                        Spot Status : <button type="button" class="btn btn-dark" data-bs-toggle="modal"
+                                            data-bs-target="#viewReservationModal{{ spot.spot_id }}">{{spot.status}}</button>
                                         {% else %}
                                         Spot Status : <button type="button"
                                             class="btn btn-dark">{{spot.status}}</button>
@@ -57,26 +57,31 @@ Home
                             <div class="modal-dialog modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h1 class="modal-title fs-5" id="viewReservationModalLabel{{ spot.spot_id }}">Occupied Parking Spot Details</h1>
+                                        <h1 class="modal-title fs-5" id="viewReservationModalLabel{{ spot.spot_id }}">
+                                            Occupied Parking Spot Details
+                                        </h1>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"
                                             aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                        {% set reservation_found = None %}
-                                        {% for reservation in reservations %}
-                                            {% if reservation.spot_id == spot.spot_id and reservation_found is none %}
-                                                {% set reservation_found = reservation %}
-                                            {% endif %}
-                                        {% endfor %}
+                                        {% set reservations_for_spot = reservations | selectattr("spot_id", "equalto",
+                                        spot.spot_id) | list %}
+                                        {% set sorted_reservations = reservations_for_spot |
+                                        sort(attribute='checkin_time') %}
+                                        {% set reservation_found = sorted_reservations | last %}
+
                                         {% if reservation_found %}
-                                            ID: <label>{{reservation_found.spot_id}} </label><br>
-                                            Customer ID: <label>{{reservation_found.user_id}} </label><br>
-                                            Vehicle Number: <label>{{reservation_found.nameplate_num}} </label><br>
-                                            Date/Time of parking : <label>{{reservation_found.checkin_time}}</label><br>
-                                            Estimated Parking Cost : <label>{{reservation_found.estimated_cost}}</label><br>
+                                        ID: <label>{{ reservation_found.spot_id }}</label><br>
+                                        Customer ID: <label>{{ reservation_found.user_id }}</label><br>
+                                        Vehicle Number: <label>{{ reservation_found.nameplate_num }}</label><br>
+                                        Date/Time of parking:
+                                        <label>{{ reservation_found.checkin_time.strftime('%Y-%m-%d %H:%M:%S')
+                                            }}</label><br>
+                                        Estimated Parking Cost:
+                                        <label>{{ reservation_found.estimated_cost }}</label><br>
                                         {% else %}
-                                            <p>No reservation found.</p>
-                                        {%  endif%}
+                                        <p>No reservation found.</p>
+                                        {% endif %}
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-dark"
@@ -85,7 +90,6 @@ Home
                                 </div>
                             </div>
                         </div>
-
                         {% endfor %}
                     </div>
                     <button type="button" class="btn btn-dark mt-3" data-bs-toggle="modal"
@@ -140,7 +144,6 @@ Home
                                         data-bs-dismiss="modal">Cancel</button>
                                 </div>
                             </form>
-
                         </div>
                     </div>
                 </div>

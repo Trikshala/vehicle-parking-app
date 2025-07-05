@@ -1,16 +1,193 @@
 {% extends "base.html" %}
-{% block title%}
-Home
-{% endblock%}
+{% block title %} Home {% endblock %}
 
-{% block content%}
+{% block content %}
 <div class="text-center">
-    <h1 class="mt-5">Welcome User {{user.username}} </h1>
-    <br>
-    <p calss="text-muted">
-    <h3>Your one-stop solution for for smart 4-wheeler parking.
-        <br> Manage all your vehicle parking needs efficiently with our application.
-    </h3>
-    </p>
+
+    {% if reservations %}
+    <div class="d-flex justify-content-center mt-5">
+        <div class="w-auto">
+            <h2 class="text-center">Recent Parking History</h2>
+            <br>
+            <table class="table table-hover table-dark" align="center">
+                <thead>
+                    <tr>
+                        <th scope="col">Registration Id</th>
+                        <th scope="col">Location</th>
+                        <th scope="col">Vehicle Number</th>
+                        <th scope="col">Timestamp</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reservation in reservations %}
+                    <tr>
+                        <td>{{ reservation.r_id}}</td>
+                        <td>{{reservation.spot.lot.primary_location}}</td>
+                        <td>{{reservation.nameplate_num}}</td>
+                        <td>
+                            {% if reservation.checkin_time %}
+                            {{ reservation.checkin_time.strftime('%Y-%m-%d %H:%M:%S') }}
+                            {% else %}
+                            Not Available
+                            {% endif %}
+                        </td>
+                        {% if reservation.actual_checkout_time %}
+                        <td><label>Parked Out</label></td>
+                        {% else %}
+                        <td><button "btn btn-sm btn-dark" data-bs-toggle="modal"
+                                data-bs-target="#releaseModal{{ reservation.r_id }}">Release Spot</button></td>
+                        {% endif %}
+                    </tr>
+
+                    <!-- Release Spot modal -->
+                    <div class="modal fade" id="releaseModal{{ reservation.r_id }}" tabindex="-1"
+                        aria-labelledby="releaseModalLabel{{ reservation.r_id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h1 class="modal-title fs-5" id="releaseModalLabel{{ reservation.r_id }}">Release
+                                        Spot Reservation - {{ reservation.r_id }}</h1>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="POST" action="{{ url_for('release_spot', r_id=reservation.r_id) }}">
+                                        {{ release_form.hidden_tag() }}
+                                        <input type="hidden" name="r_id" value="{{ reservation.r_id }}">
+
+                                        <p><strong>Vehicle Number:</strong> {{ reservation.nameplate_num }}</p>
+                                        <p><strong>Parking Time::</strong> {{ reservation.checkin_time }}</p>
+                                        <p><strong>Releasing Time::</strong> {{ reservation.actual_checkout_time }}</p>
+                                        <p><strong>Total Cost:</strong> ₹{{ reservation.total_cost }}</p>
+
+                                        <button type="submit" class="btn btn-primary">Confirm Release</button>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <h3>No recent parking history.</h3>
+    {%endif %}
+
+    <hr>
+
+    <h1 class="mt-5 text-center">Search Available Parking lots</h1>
+
+    <div class="form-container mt-4">
+        <form action="{{ url_for('user_home') }}" method="POST"
+            class="d-flex justify-content-center align-items-center gap-3">
+            {{ form.hidden_tag() }}
+            <span class="me-2 fs-4">{{ form.location.label(class="form-label m-0") }}</span>
+            {{ form.location(class="form-select w-auto") }}
+            {{ form.submit(class="btn btn-primary") }}
+        </form>
+    </div>
+
+    {% if lots %}
+    <div class="d-flex justify-content-center mt-5">
+        <div class="w-auto">
+            <h2 class="text-center">Available Parking Lots in {{ form.location.data }}</h2>
+            <br>
+            <table class="table table-hover table-dark" align="center">
+                <thead>
+                    <tr>
+                        <th scope="col">Lot Id</th>
+                        <th scope="col">Address</th>
+                        <th scope="col">Spots Available</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in lots %}
+                    <tr>
+                        <td>{{ item.lot_id }}</td>
+                        <td>{{ item.full_address }}</td>
+                        <td>{{ item.available_count }}</td>
+                        <td>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#bookingModal{{ loop.index }}">
+                                Book
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- Booking Modal -->
+                    <div class="modal fade" id="bookingModal{{ loop.index }}" tabindex="-1"
+                        aria-labelledby="bookingModalLabel{{ loop.index }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h1 class="modal-title fs-5" id="bookingModalLabel{{ loop.index }}">Book Spot in Lot
+                                        {{ item.lot_id }}</h1>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="POST" action="{{ url_for('book_spot') }}">
+                                        {{ form.hidden_tag() }}
+                                        <div class="mb-2">
+                                            <label for="lot_id{{ loop.index }}">Lot ID</label>
+                                            <input type="text" name="lot_id" value="{{ item.lot_id }}" readonly
+                                                class="form-control mb-2">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="spot_id{{ loop.index }}">Spot ID</label>
+                                            <input type="text" name="spot_id" value="{{ item.spot_id }}" readonly
+                                                class="form-control mb-2">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="user_id{{ loop.index }}">User ID</label>
+                                            <input type="text" name="user_id" value="{{ current_user.id }}" readonly
+                                                class="form-control mb-2">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="cost_per_unit{{ loop.index }}">Cost Per Hour</label>
+                                            <input type="text" name="cost_per_hour" value="{{ item.cost_per_unit }}"
+                                                readonly class="form-control mb-2" id="costPerHour{{ loop.index }}">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="no_of_hours{{ loop.index }}">Number of Hours</label>
+                                            <input type="number" name="no_of_hours" id="no_of_hours{{ loop.index }}"
+                                                class="form-control" min="1" required>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="vehicle_model{{ loop.index }}">Vehicle Model</label>
+                                            <input type="text" name="vehicle_model" id="vehicle_model{{ loop.index }}"
+                                                class="form-control" required>
+                                        </div>
+
+                                        <div class="mb-2">
+                                            <label for="vehicle_number{{ loop.index }}">Number Plate</label>
+                                            <input type="text" name="vehicle_number" id="vehicle_number{{ loop.index }}"
+                                                class="form-control" required>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary">Book Now</button>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
