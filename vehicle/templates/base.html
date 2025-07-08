@@ -39,17 +39,23 @@
                         <a class="nav-link" href="{{url_for('display_users')}}">Users</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Search</a>
+                        <a class="nav-link" href="{{url_for('admin_search')}}">Search</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">Summary</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{url_for('edit_admin_profile')}}">Edit Profile</a>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link active" href="#">Home</a>
+                        <a class="nav-link active" href="{{url_for('user_home')}}">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">Summary</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{url_for('edit_user_profile')}}">Edit Profile</a>
                     </li>
                     {% endif %}
                     <li class="nav-item">

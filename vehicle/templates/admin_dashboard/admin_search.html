@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title%}
+Admin Search
+{% endblock%}
+
+{% block content%}
+<div class="text-center mt-5">
+    <h2 class="text-center">Welcome to Admin Search</h2>
+    <div class="form-container mt-4">
+        <form action="{{ url_for('admin_search') }}" method="POST"
+            class="d-flex justify-content-center align-items-center gap-3">
+            {{ form.hidden_tag() }}
+            <label for="search_choice" class="form-label mb-0">Search&nbsp;By</label>
+
+            {{ form.search_choice(class="form-select w-auto") }}
+
+            {{ form.search_string(class="form-control", placeholder = "Type Here...") }}
+
+            {{ form.submit(class="btn btn-primary") }}
+    </div>
+
+    </form>
+</div>
+
+{% if search_choice == 'u_id' %}
+{% if user_record %}
+<hr>
+<div class="table-hover d-flex justify-content-center" style="margin-top: 30px; margin-left: 30px;">
+    <div class="col-8 text-center">
+        <h2 class="text-center">User {{ user_record.id}}'s Details</h2>
+        <br>
+        <table class="table table-hover table-dark">
+            <thead>
+                <tr>
+                    <th scope="col">User ID</th>
+                    <th scope="col">Full Name</th>
+                    <th scope="col">Email Address</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Contact Number</th>
+                    <th scope="col">Address</th>
+                    <th scope="col">Pincode</th>
+                    <th scope="col">Parking History</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ user_record.id }}</td>
+                    <td>{{user_record.full_name}}</td>
+                    <td>{{user_record.email_address}}</td>
+                    <td>{{user_record.username}}</td>
+                    <td>{{user_record.contact_number}}</td>
+                    <td>{{user_record.address}}</td>
+                    <td>{{user_record.pincode}}</td>
+                    <td><a href="{{ url_for('user_parking_history', user_id=user_record.id) }}"
+                            class="btn btn-info btn-sm ce">View parking history</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% elif search_choice == 'loc' %}
+{% if lots %}
+<hr>
+<h2 class="text-center">Parking Lots @ {{ search_string }}</h2>
+<br>
+<div class="row justify-content-center">
+    
+    {% for lot in lots %}
+    {% include 'components/lot_card.html' %}
+    {% endfor %}
+    
+</div>
+{% endif %}
+
+{% endif %}
+
+</div>
+{% endblock %}

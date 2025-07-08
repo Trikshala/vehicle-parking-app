@@ -2,7 +2,7 @@ from vehicle import app, db
 from flask import render_template, flash, redirect, url_for, abort, request
 from functools import wraps
 from datetime import datetime, timedelta
-from vehicle.controllers.forms import RegistrationForm, LoginForm, CreateParkingLotForm, DeleteParkingLotForm, SearchParkingLot, BookingForm, ReleaseSpotForm
+from vehicle.controllers.forms import RegistrationForm, LoginForm, CreateParkingLotForm, DeleteParkingLotForm, SearchParkingLot, BookingForm, ReleaseSpotForm, EditProfileForm, AdminSearchForm
 from vehicle.models import User, ParkingLot, ParkingSpot, Reservation
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.orm import joinedload
@@ -120,26 +120,55 @@ def delete_lot(lot_id):
 @admin_required
 def edit_lot(lot_id):
     lot = ParkingLot.query.get_or_404(lot_id)
-    form = CreateParkingLotForm(original_id = lot_id, obj = lot)
+    form = CreateParkingLotForm(original_id=lot_id, obj=lot)
+
     if form.validate_on_submit():
+        new_max_spots = form.max_spots.data
+        new_cost = form.cost_per_unit.data
+
+        if new_max_spots is None or new_cost is None:
+            flash("Please fill in all required fields.", "danger")
+            return redirect(url_for('admin_home'))
+
+        occupied_spots = ParkingSpot.query.filter_by(lot_id=lot.lot_id, status='O').count() or 0
+
+        if new_max_spots < occupied_spots:
+            flash(f"Cannot set max spots to {new_max_spots} as {occupied_spots} spot(s) are currently occupied.", "danger")
+            return redirect(url_for('admin_home'))
+
+        if occupied_spots > 0 and float(new_cost) != float(lot.cost_per_unit):
+            flash("Cannot change the cost while spots are occupied.", "warning")
+            return redirect(url_for('admin_home'))
+
         old_max_spots = lot.max_spots
-        form.populate_obj(lot)
-        if lot.max_spots > old_max_spots:
-            for _ in range(lot.max_spots - old_max_spots):
-                new_spot = ParkingSpot(status = 'A', lot_id = lot.lot_id)
+        lot.max_spots = new_max_spots
+        lot.cost_per_unit = float(new_cost)
+        lot.primary_location = form.primary_location.data
+        lot.full_address = form.full_address.data
+        lot.pincode = form.pincode.data
+
+
+        if new_max_spots > old_max_spots:
+            for _ in range(new_max_spots - old_max_spots):
+                new_spot = ParkingSpot(status='A', lot_id=lot.lot_id)
                 db.session.add(new_spot)
-        elif lot.max_spots < old_max_spots:
-            spots_to_delete = ParkingSpot.query.filter_by(lot_id=lot.lot_id).order_by(ParkingSpot.spot_id.desc()).limit(old_max_spots - lot.max_spots).all()
+
+        elif new_max_spots < old_max_spots:
+            spots_to_delete = ParkingSpot.query.filter_by(lot_id=lot.lot_id).order_by(ParkingSpot.spot_id.desc()).limit(old_max_spots - new_max_spots).all()
             for spot in spots_to_delete:
                 db.session.delete(spot)
+
         db.session.commit()
         flash("Parking Lot Updated Successfully!", "success")
+
+
     else:
         for field, errors in form.errors.items():
             for error in errors:
                 flash(f"Error in {field}: {error}", "danger")
 
     return redirect(url_for('admin_home'))
+
 
 @app.route('/admin/users')
 @login_required
@@ -148,9 +177,79 @@ def display_users():
     users = User.query.filter_by(is_admin= False).all()
     return render_template('admin_dashboard/display_users.html', user = current_user, users = users)
 
+@app.route('/admin/user_history/<int:user_id>')
+@login_required
+@admin_required
+def user_parking_history(user_id):
+    user = User.query.get_or_404(user_id)
+    reservations = Reservation.query.filter_by(user_id = user_id).order_by(Reservation.checkin_time.desc()).all()
+    return render_template('admin_dashboard/user_parking_history.html', user = user, reservations = reservations)
 
+@app.route('/admin/edit_profile', methods=["GET", "POST"])
+@admin_required
+@login_required
+def edit_admin_profile():
+    form = EditProfileForm(obj=current_user)
 
+    if request.method == "POST" and form.validate_on_submit():
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data
+        current_user.email_address = form.email_address.data
+        current_user.contact_number = form.contact_number.data
+        current_user.address = form.address.data
+        current_user.pincode = form.pincode.data
+        db.session.commit()
+        flash(f"Profile updated Successfully!", "success")
+        return redirect(url_for('admin_home'))
+    
+    elif request.method == "GET":
+        form.first_name.data = current_user.first_name
+        form.last_name.data = current_user.last_name
+        form.email_address.data = current_user.email_address
+        form.contact_number.data = current_user.contact_number
+        form.address.data = current_user.address
+        form.pincode.data = current_user.pincode
+    
 
+    return render_template('admin_dashboard/admin_edit.html', form = form)
+
+@app.route('/admin/search', methods= ["GET", "POST"])
+@login_required
+@admin_required
+def admin_search():
+    form = AdminSearchForm()
+    edit_form = {}
+    delete_form = {}
+    user_record = None
+    lots = None
+    reservations = []
+    search_choice = None
+    search_string = None
+    if form.validate_on_submit():
+        search_choice = form.search_choice.data
+        search_string = form.search_string.data.strip()
+        if search_choice == 'u_id':
+            try:
+                search_string = int(search_string)
+            except ValueError:
+                flash('User id must be an integer', 'danger')
+            user_record = User.query.filter_by(id = search_string).first()
+            if not user_record:
+                flash('User does not exist.', 'danger')
+        elif search_choice == 'loc':
+            lots = ParkingLot.query.filter_by(primary_location = search_string).all()
+            if not lots:
+                flash('Location not found. Try checking the spelling', 'danger')
+            reservations = Reservation.query.all()
+            delete_form = DeleteParkingLotForm()
+            edit_form = {}
+            for lot in lots:
+                edit_form[lot.lot_id] = CreateParkingLotForm(obj=lot)
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"{error}", "danger")
+    return render_template('admin_dashboard/admin_search.html', form = form, search_choice = search_choice, user_record = user_record, lots = lots, search_string = search_string, reservations = reservations, edit_form = edit_form, delete_form = delete_form)
 
 
 # User routes
@@ -175,13 +274,7 @@ def user_home():
         for lot in available_lots:
             available_spots = [s for s in lot.parking_spots if s.status == 'A']
             spot = sorted(available_spots, key=lambda s: s.spot_id)[0] if available_spots else None
-            lot_info.append({
-                'lot_id': lot.lot_id,
-                'full_address': lot.full_address,
-                'cost_per_unit': lot.cost_per_unit,
-                'available_count': len(available_spots),
-                'spot_id': spot.spot_id if spot else None
-            })
+            lot_info.append({'lot_id': lot.lot_id, 'full_address': lot.full_address, 'cost_per_unit': lot.cost_per_unit, 'available_count': len(available_spots), 'spot_id': spot.spot_id if spot else None})
     return render_template('user_dashboard/user_home.html', user=current_user, form=form, lots=lot_info, reservations = reservations, now=datetime.now(), datetime=datetime, release_form = release_form)
 
 
@@ -197,9 +290,10 @@ def book_spot():
         vehicle_number = form.vehicle_number.data
         num_hrs = int(form.no_of_hours.data)
         cost_per_hour = float(form.cost_per_hour.data)
-        existing_vehicle = Reservation.query.filter_by(nameplate_num=vehicle_number).first()
+
+        existing_vehicle = Reservation.query.filter_by(nameplate_num=vehicle_number, actual_checkout_time=None).first()
         if existing_vehicle:
-            flash("This vehicle is already booked!", "danger")
+            flash("This vehicle is already actively parked!", "danger")
             return redirect(url_for("user_home"))
 
         spot = ParkingSpot.query.filter_by(lot_id=lot_id, status='A').order_by(ParkingSpot.spot_index).first()
@@ -208,34 +302,27 @@ def book_spot():
             return redirect(url_for("user_home"))
 
         existing_res = Reservation.query.filter_by(spot_id=spot.spot_id).order_by(Reservation.checkin_time.desc()).first()
-        if existing_res and existing_res.checkout_time > datetime.now():
+        if existing_res and existing_res.actual_checkout_time is None:
             flash("This parking spot already has an active reservation.", "danger")
             return redirect(url_for("user_home"))
+
 
         checkin_time = datetime.now()
         checkout_time = checkin_time + timedelta(hours=num_hrs)
         estimated_cost = cost_per_hour * num_hrs
 
-        reservation = Reservation(
-            spot_id=spot.spot_id,
-            user_id=user_id,
-            checkin_time=checkin_time,
-            checkout_time=checkout_time,
-            vehicle_model=vehicle_model,
-            nameplate_num=vehicle_number,
-            cost_per_unit=cost_per_hour,
-            estimated_cost=estimated_cost
-        )
+        reservation = Reservation(spot_id=spot.spot_id, user_id=user_id, checkin_time=checkin_time, checkout_time=checkout_time, vehicle_model=vehicle_model, nameplate_num=vehicle_number, cost_per_unit=cost_per_hour, estimated_cost=estimated_cost)
 
         spot.status = 'O'
         db.session.add(reservation)
         db.session.commit()
 
         flash(f'Spot reservation successful! Spot ID: {spot.spot_id}, Estimated Cost: ₹{estimated_cost}', 'success')
-        return redirect(url_for('user_home')) 
+        return redirect(url_for('user_home'))
 
     flash('Something went wrong! Reservation unsuccessful!', 'danger')
     return redirect(url_for('user_home'))
+
 
 @app.route('/user/release_spot/<int:r_id>', methods = ["POST"])
 @login_required
@@ -253,10 +340,38 @@ def release_spot(r_id):
 
     return redirect(url_for('user_home'))
 
+@app.route('/user/edit_profile', methods=["GET", "POST"])
+@user_required
+@login_required
+def edit_user_profile():
+    form = EditProfileForm(obj=current_user)
+
+    if request.method == "POST" and form.validate_on_submit():
+        current_user.first_name = form.first_name.data
+        current_user.last_name = form.last_name.data
+        current_user.email_address = form.email_address.data
+        current_user.contact_number = form.contact_number.data
+        current_user.address = form.address.data
+        current_user.pincode = form.pincode.data
+        db.session.commit()
+        flash(f"Profile updated Successfully!", "success")
+        return redirect(url_for('user_home'))
+    
+    elif request.method == "GET":
+        form.first_name.data = current_user.first_name
+        form.last_name.data = current_user.last_name
+        form.email_address.data = current_user.email_address
+        form.contact_number.data = current_user.contact_number
+        form.address.data = current_user.address
+        form.pincode.data = current_user.pincode
+    
+    return render_template('user_dashboard/user_edit.html', form = form)
+
 
 @app.route('/logout')
 def logout_page():
     logout_user()
     flash(f'You have been logged out.', category='info')
     return render_template('welcome.html')
+
 

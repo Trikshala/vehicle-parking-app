@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title%}
+Parking History
+{% endblock%}
+
+{% block content%}
+{% if reservations %}
+<div class="table-hover d-flex justify-content-center" style="margin-top: 30px; margin-left: 30px;">
+    <div class="col-8 text-center">
+        <h2 class="text-center">Parking History for {{user.full_name}}</h2>
+        <br>
+        <table class="table table-hover table-dark justify-content-center">
+            <thead>
+                <tr>
+                    <th scope="col">S.No</th>
+                    <th scope="col">Reservation ID</th>
+                    <th scope="col">Lot location</th>
+                    <th scope="col">Spot Number</th>
+                    <th scope="col">Vehicle Number</th>
+                    <th scope="col">Checkin time</th>
+                    <th scope="col">Check Out Time</th>
+                    <th scope="col">Total Duration</th>
+                    <th scope="col">Total Cost</th>
+                    <th scope="col">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reservation in reservations %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ reservation.r_id }}</td>
+                    <td>{{reservation.spot.lot.primary_location}}</td>
+                    <td>{{reservation.spot.spot_id}}</td>
+                    <td>{{reservation.nameplate_num}}</td>
+                    <td>{{reservation.checkin_time.strftime('%Y-%m-%d %H:%M:%S')}}</td>
+
+                    {% if reservation.actual_checkout_time %}
+                    <td>{{reservation.actual_checkout_time.strftime('%Y-%m-%d %H:%M:%S')}}</td>
+                    <td>{{reservation.parking_duration}} Hrs</td>
+                    <td>₹ {{reservation.total_cost}}</td>
+                    <td><label style="color: lightpink;">Completed</label></td>
+
+                    {% else %}
+                    <td>---</td>
+                    <td>{{reservation.parking_duration}} Hrs (so far)</td>
+                    <td>₹ {{reservation.total_cost}} (ongoing)</td>
+                    <td><label style="color: lightgreen;">Active</label></td>
+
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <h3>Sorry! No parking History available for {{user.username}}</h3><br>
+        {% endif %}
+        <a class="btn btn-primary" href="{{url_for('display_users')}}" role="button">
+            ← Go Back to User details
+        </a>
+        &nbsp;
+        <a class="btn btn-primary" href="{{url_for('admin_search')}}" role="button">
+            ← Go Back to Search
+        </a>
+    </div>
+</div>
+{% endblock %}

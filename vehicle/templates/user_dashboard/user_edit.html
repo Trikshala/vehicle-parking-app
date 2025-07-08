@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title%}
+Edit Profile
+{% endblock%}
+
+{% block content%}
+<h1 class="text-center mt-5"> </h1>
+<div class="container mt-3">
+    <div class="form-container">
+        <form class="form-main" method="POST">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{form.first_name.label()}}
+                {{form.first_name(class="form-control", placeholder="First Name")}}<br>
+
+                {{form.last_name.label()}}
+                {{form.last_name(class="form-control", placeholder="Last Name")}}<br>
+
+                {{form.email_address.label()}}
+                {{form.email_address(class="form-control", placeholder="Email Address")}}<br>
+
+                {{form.contact_number.label()}}
+                {{form.contact_number(class="form-control", placeholder="Contact Number")}}<br>
+
+                {{form.address.label()}}
+                {{form.address(class="form-control", placeholder="Address")}}<br>
+
+                {{form.pincode.label()}}
+                {{form.pincode(class="form-control", placeholder="Pincode")}}<br>
+
+                <br>
+                {{ form.submit(class="form-submit btn btn-lg btn-block btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

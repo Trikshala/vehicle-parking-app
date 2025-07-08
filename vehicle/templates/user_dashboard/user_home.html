@@ -58,7 +58,7 @@
 
                                         <p><strong>Vehicle Number:</strong> {{ reservation.nameplate_num }}</p>
                                         <p><strong>Parking Time::</strong> {{ reservation.checkin_time }}</p>
-                                        <p><strong>Releasing Time::</strong> {{ reservation.actual_checkout_time }}</p>
+                                        <p><strong>Releasing Time::</strong> {{ reservation.actual_checkout_time}}</p>
                                         <p><strong>Total Cost:</strong> ₹{{ reservation.total_cost }}</p>
 
                                         <button type="submit" class="btn btn-primary">Confirm Release</button>
@@ -105,6 +105,7 @@
                         <th scope="col">Lot Id</th>
                         <th scope="col">Address</th>
                         <th scope="col">Spots Available</th>
+                        <th scope="col">Cost per hour</th>
                         <th scope="col">Action</th>
                     </tr>
                 </thead>
@@ -114,6 +115,7 @@
                         <td>{{ item.lot_id }}</td>
                         <td>{{ item.full_address }}</td>
                         <td>{{ item.available_count }}</td>
+                        <td>{{ item.cost_per_unit }}</td>
                         <td>
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                 data-bs-target="#bookingModal{{ loop.index }}">

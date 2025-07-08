@@ -42,10 +42,6 @@ class CreateParkingLotForm(FlaskForm):
         super().__init__(*args, **kwargs)
         self.original_id = original_id
 
-    def validate_primary_location(self, primary_location_to_check):
-        primary_location = ParkingLot.query.filter_by(primary_location = primary_location_to_check.data).first()
-        if primary_location and primary_location.lot_id != self.original_id:
-            raise ValidationError('Parking lot with this Location already exists!.')
 
 class DeleteParkingLotForm(FlaskForm):
     submit = SubmitField(label="Delete Parking Lot")
@@ -67,6 +63,37 @@ class BookingForm(FlaskForm):
 class ReleaseSpotForm(FlaskForm):
     r_id = HiddenField()
     submit = SubmitField(label='Release')
+
+class EditProfileForm(FlaskForm):
+    first_name = StringField(label="First Name: ",validators=[DataRequired()])
+    last_name = StringField(label="Last Name: ")
+    email_address = StringField(label="Email Address: ",validators=[Email(),DataRequired()])
+    contact_number = StringField(label="Contact Number: ",validators=[Length(min=10, max=10, message="Contact number must be exactly 10 digits."),Regexp(r'^\d{10}$', message="Contact number must contain only digits.")])
+    address = StringField(label="Address: ",validators=[Length(min=2,max=50)])
+    pincode = StringField(label="Pin Code: ",validators=[Length(min=6,max=6, message="PinCode must be exactly 6 digits."),Regexp(r'^\d{6}$', message="PinCode must contain only digits.")])
+    submit = SubmitField(label="Edit Profile")
+
+class AdminSearchForm(FlaskForm):
+    search_choice = SelectField(label = 'Search by', choices = [('u_id', 'User ID'), ('loc', 'Location Name')])
+    search_string = StringField(label="Search by Keyword", validators=[DataRequired()])
+    submit = SubmitField(label="Search")
+
+    def validate_search(self, value):
+        search_choice = self.search_choice.data
+        search_string = value.data.strip()
+
+        if search_choice == 'u_id':
+            try:
+                search_string = int(search_string)
+            except ValueError:
+                raise ValidationError("User ID must be an integer.")
+            if not User.query.get(search_string):
+                raise ValidationError("User not found in database.")
+            
+        elif search_choice == 'loc':
+            if not ParkingLot.query.filter_by(primary_location = search_string).first():
+                raise ValidationError("Location not found.")
+
 
 
     

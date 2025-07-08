@@ -34,7 +34,7 @@ class User(db.Model, UserMixin):
 
 class ParkingLot(db.Model):
     lot_id = db.Column(db.Integer(), primary_key = True)
-    primary_location = db.Column(db.String(length=20), nullable = False, unique = True)
+    primary_location = db.Column(db.String(length=20), nullable = False)
     full_address = db.Column(db.String(length=50), nullable = False)
     pincode = db.Column(db.String(6), nullable = False)
     max_spots = db.Column(db.Integer(), nullable = False)
@@ -60,7 +60,7 @@ class Reservation(db.Model):
     checkout_time = db.Column(db.DateTime, nullable = False)
     actual_checkout_time = db.Column(db.DateTime)
     vehicle_model = db.Column(db.String(length=20), nullable = False)
-    nameplate_num = db.Column(db.String(15), nullable=False, unique = True)
+    nameplate_num = db.Column(db.String(15), nullable=False)
     cost_per_unit = db.Column(db.Float, nullable = False)
     estimated_cost = db.Column(db.Float, nullable = True)
 
@@ -68,15 +68,25 @@ class Reservation(db.Model):
     def total_cost(self):
         if not self.checkin_time:
             return 0  
-
         if self.checkout_time:
-            end_time = min(self.actual_checkout_time or datetime.now(), self.checkout_time)
+            end_time = self.actual_checkout_time or datetime.now()
         else:
             end_time = self.actual_checkout_time or datetime.now()
 
         parking_duration = end_time - self.checkin_time
-        hours = max(1, parking_duration.total_seconds() // 3600)
+        hours = parking_duration.total_seconds() // 3600
         return round(hours * self.cost_per_unit, 2)
+    
+    @property
+    def parking_duration(self):
+        if self.actual_checkout_time:
+            end_time = self.actual_checkout_time or datetime.now()
+        else:
+            end_time = datetime.now()
+
+        duration = end_time - self.checkin_time
+        hours = max(1, duration.total_seconds() // 3600)
+        return hours
 
 
 
