@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}
+User Summary
+{% endblock %}
+
+{% block content %}
+<h1 class="text-center mt-3">Parking Analytics</h1>
+<hr>
+<div class="chart-config">
+    <canvas id="resFreq"> </canvas>
+    <div class="vertical-line"></div>
+    <canvas id="avgDur"> </canvas>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+{{ super() }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script id="user-chart1" type="application/json">
+  {{ user_res | tojson | safe }}
+</script>
+
+<script id="user-chart2" type="application/json">
+  {{ avg_dur_data | tojson | safe }}
+</script>
+
+<script>
+    // Bar Chart - Parking Frequency per lot
+    const userReservations = JSON.parse(document.getElementById('user-chart1').textContent);
+    const lotNames = userReservations.lots;
+    const visits = userReservations.visits;
+
+    const generateAutoColors = (count) => {
+        const colors = [];
+        for (let i = 0; i < count; i++) {
+            const hue = Math.floor((360 / count) * i);
+            colors.push(`hsl(${hue}, 80%, 60%)`);
+        }
+        return colors;
+
+    };
+
+    const backgroundColors = generateAutoColors(lotNames.length)
+
+    const ctx = document.getElementById('resFreq').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: lotNames,
+            datasets: [{
+                label: 'Parking Frequency',
+                data: visits,
+                backgroundColor: backgroundColors,
+                borderColor: '#333',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Parking Frequency per Lot',
+                    font: {
+                        size: 24,
+                        weight: 'bold'
+                    },
+                    color: '#000',
+                    padding: {
+                        top: 10,
+                        bottom: 20
+                    }
+                },
+                legend: {
+                    display: false
+                }
+            }
+            ,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Lot Names',
+                        color: '#000',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'No of times parked',
+                        color: '#000',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Pie Chart - Reservation Duration
+    const avgDuration = JSON.parse(document.getElementById('user-chart2').textContent);
+    const labels = avgDuration.labels;
+    const values = avgDuration.values;
+    const pieColors = labels.map((_, i) => `hsl(${(360 / labels.length) * i}, 70%, 60%)`);
+    const ctx2 = document.getElementById('avgDur').getContext('2d');
+    console.log(avgDuration);
+    new Chart(ctx2, {
+        type : 'pie',
+        data : {
+            labels : labels,
+            datasets : [{
+                data : values,
+                backgroundColor : pieColors,
+                borderColor : '#333',
+                borderWidth : 2
+            }]
+        },
+        options : {
+            responsive : true,
+            plugins : {
+                title : {
+                    display : true,
+                    text : 'Average Parking Duration per Lot',
+                    font : {
+                        size : 24
+                    },
+                    color : '#000'
+                },
+                legend : {
+                    position : 'bottom',
+                    labels : {
+                        color : '#000'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

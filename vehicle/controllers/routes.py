@@ -6,6 +6,7 @@ from vehicle.controllers.forms import RegistrationForm, LoginForm, CreateParking
 from vehicle.models import User, ParkingLot, ParkingSpot, Reservation
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.orm import joinedload
+from collections import defaultdict
 
 @app.route('/')
 @app.route('/home')
@@ -36,6 +37,10 @@ def login_page():
 def register_page():
     form = RegistrationForm()
     if form.validate_on_submit():
+        phone_num = form.contact_number.data
+        if User.query.filter_by(contact_number = phone_num).first():
+            flash(f'Phone number already registered!','danger')
+            return redirect(url_for('register_page'))
         new_user = User(first_name = form.first_name.data, last_name = form.last_name.data, email_address = form.email_address.data, username = form.username.data,  contact_number = form.contact_number.data, address = form.address.data, pincode = form.pincode.data)
         new_user.password = form.pass_1.data
         db.session.add(new_user)
@@ -82,6 +87,8 @@ def user_required(f):
 @admin_required
 def admin_home():
     lots = ParkingLot.query.options(joinedload(ParkingLot.parking_spots.and_(ParkingSpot.spot_id))).all()
+    for lot in lots:
+        lot.occupied = sum(1 for spot in lot.parking_spots if spot.status == 'O')
     reservations = Reservation.query.all()
     form = CreateParkingLotForm()
     delete_form = DeleteParkingLotForm()
@@ -238,6 +245,8 @@ def admin_search():
                 flash('User does not exist.', 'danger')
         elif search_choice == 'loc':
             lots = ParkingLot.query.filter_by(primary_location = search_string).all()
+            for lot in lots:
+                lot.occupied = sum(1 for spot in lot.parking_spots if spot.status == 'O')
             if not lots:
                 flash('Location not found. Try checking the spelling', 'danger')
             reservations = Reservation.query.all()
@@ -250,6 +259,47 @@ def admin_search():
             for error in errors:
                 flash(f"{error}", "danger")
     return render_template('admin_dashboard/admin_search.html', form = form, search_choice = search_choice, user_record = user_record, lots = lots, search_string = search_string, reservations = reservations, edit_form = edit_form, delete_form = delete_form)
+
+@app.route('/admin/summary')
+@login_required
+@admin_required
+def admin_summary():
+    lots = ParkingLot.query.all()
+    revenue_data = defaultdict(float)
+    for lot in lots:
+        total_revenue = 0
+        for spot in lot.parking_spots:
+            for reservation in spot.reservations:
+                total_revenue+=reservation.final_cost or 0
+        revenue_data[lot.lot_id] = {
+           "label" : f"{lot.primary_location} (ID:{lot.lot_id})",
+           "value" : total_revenue
+        }
+    
+    chart_data = {
+        "labels":[x["label"] for x in revenue_data.values()],
+        "values": [x["value"] for x in revenue_data.values()]
+    }
+    
+    reservation_dist = {}
+    for lot in lots:
+        occupied_count = 0
+        total = lot.max_spots
+        for spot in lot.parking_spots:
+            if spot.status == 'O':
+                occupied_count+=1
+        reservation_dist[lot.lot_id] = {'label': f"{lot.primary_location} (ID:{lot.lot_id})",
+                                        'available':(total - occupied_count), 
+                                        'occupied': occupied_count
+                                        }
+
+    second_chart = {
+    "labels": [v['label'] for v in reservation_dist.values()],
+    "available": [v['available'] for v in reservation_dist.values()],
+    "occupied": [v['occupied'] for v in reservation_dist.values()]
+    }
+
+    return render_template('admin_dashboard/admin_summary.html', chart_data=chart_data, second_chart = second_chart)
 
 
 # User routes
@@ -333,6 +383,7 @@ def release_spot(r_id):
         flash("Spot already released!", "danger")
         return redirect(url_for('user_home'))
     reservation.actual_checkout_time = datetime.now()
+    reservation.final_cost = reservation.calculate_cost_at(reservation.actual_checkout_time)
     reservation.spot.status = "A"
     db.session.commit()
 
@@ -367,7 +418,56 @@ def edit_user_profile():
     
     return render_template('user_dashboard/user_edit.html', form = form)
 
+@app.route('/user/summary')
+@login_required
+@user_required
+def user_summary():
+    reservations = Reservation.query.all()
+    res_freq = defaultdict(float)
+    res_freq = {}
 
+    for res in reservations:
+        if res.user_id == current_user.id:
+            lot_id = res.spot.lot.lot_id  
+            if lot_id in res_freq:
+                res_freq[lot_id]['frequency'] += 1
+            else:
+                res_freq[lot_id] = {
+                    'label': f"{res.spot.lot.primary_location} (ID: {lot_id})",
+                    'frequency': 1
+                }
+
+    user_res = {
+        "lots" : [v['label'] for v in res_freq.values()],
+        "visits" : [v['frequency'] for v in res_freq.values()]
+    }
+
+    duration_data = defaultdict(list)
+    for res in reservations:
+        if res.user_id == current_user.id:
+            start = res.checkin_time
+            if res.actual_checkout_time:
+                end = res.actual_checkout_time
+            else:
+                end = datetime.now()
+            duration = (end - start).total_seconds()/60
+            lot_label = f"{res.spot.lot.primary_location} (ID: {res.spot.lot.lot_id})"
+            duration_data[res.spot.lot.lot_id].append((lot_label, duration))
+
+    avg_dur_data = {
+        'labels' : [],
+        'values' : []
+    }
+
+    for id, values in duration_data.items():
+        labels, durations = zip(*values)
+        avg = sum(durations) / len(durations)
+        avg_dur_data['labels'].append(labels[0])
+        avg_dur_data['values'].append(round(avg, 2))
+
+    return render_template('user_dashboard/user_summary.html', user_res = user_res, avg_dur_data = avg_dur_data)
+
+# Logout Route
 @app.route('/logout')
 def logout_page():
     logout_user()

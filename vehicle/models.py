@@ -2,6 +2,7 @@ from . import db
 from datetime import datetime, timedelta
 from vehicle import bcrypt
 from flask_login import UserMixin
+import math
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer(), primary_key = True)
@@ -63,18 +64,19 @@ class Reservation(db.Model):
     nameplate_num = db.Column(db.String(15), nullable=False)
     cost_per_unit = db.Column(db.Float, nullable = False)
     estimated_cost = db.Column(db.Float, nullable = True)
+    final_cost = db.Column(db.Float, nullable=True)
 
     @property
     def total_cost(self):
         if not self.checkin_time:
             return 0  
         if self.checkout_time:
-            end_time = self.actual_checkout_time or datetime.now()
+            end_time = datetime.now()
         else:
-            end_time = self.actual_checkout_time or datetime.now()
+            end_time = datetime.now()
 
         parking_duration = end_time - self.checkin_time
-        hours = parking_duration.total_seconds() // 3600
+        hours = max(1, math.ceil(parking_duration.total_seconds() / 3600))
         return round(hours * self.cost_per_unit, 2)
     
     @property
@@ -85,8 +87,14 @@ class Reservation(db.Model):
             end_time = datetime.now()
 
         duration = end_time - self.checkin_time
-        hours = max(1, duration.total_seconds() // 3600)
-        return hours
-
+        total_seconds = duration.total_seconds()
+        hours = int(total_seconds // 3600)
+        minutes = int((total_seconds % 3600) // 60)
+        return f"{hours} hr {minutes} min"
+    
+    def calculate_cost_at(self, end_time):
+        parking_duration = end_time - self.checkin_time
+        hours = max(1, math.ceil(parking_duration.total_seconds() / 3600))
+        return round(hours * self.cost_per_unit, 2)
 
 

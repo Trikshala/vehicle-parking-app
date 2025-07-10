@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}
+Admin Summary
+{% endblock %}
+
+{% block content %}
+<h1 class="text-center mt-5 mb-4">Parking Lot Analytics</h1>
+<hr>
+<div class="chart-config">
+  <canvas id="revenueChart"></canvas>
+  <div class="vertical-line"></div>
+  <canvas id="reservationCount"></canvas>
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+
+{{ super() }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script id="chart-data" type="application/json">
+  {{ chart_data | tojson | safe }}
+</script>
+
+<script id="second-chart" type="application/json">
+  {{ second_chart | tojson | safe }}
+</script>
+
+<script>
+  // First chart: Revenue Generated in each Lot
+  const chartData = JSON.parse(document.getElementById('chart-data').textContent);
+  const revenueLabels = chartData.labels;
+  const revenueValues = chartData.values;
+
+  const generateAutoColors = (count) => {
+    const colors = [];
+    for (let i = 0; i < count; i++) {
+      const hue = Math.floor((360 / count) * i);
+      colors.push(`hsl(${hue}, 80%, 60%)`);
+    }
+    return colors;
+  };
+
+  const backgroundColors = generateAutoColors(revenueLabels.length);
+
+  const ctx = document.getElementById('revenueChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: revenueLabels,
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: revenueValues,
+        backgroundColor: backgroundColors,
+        borderColor: '#333',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Revenue Earned per Lot',
+          font: {
+            size: 24,
+            weight: 'bold'
+          },
+          color: '#000',
+          padding: {
+            top: 10,
+            bottom: 20
+          }
+        },
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: "Parking Lots",
+            color: '#000',
+            font: {
+              size: 16,
+              weight: 'bold'
+            }
+
+          }
+        },
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Revenue Generated",
+            color: '#000',
+            font: {
+              size: 16,
+              weight: 'bold'
+            }
+
+          }
+        }
+      }
+    }
+  });
+
+  // Second chart: Reservation Distribution per Lot
+  const secondChart = JSON.parse(document.getElementById('second-chart').textContent);
+  const lotLocation = secondChart.labels;
+  const available = secondChart.available;
+  const occupied = secondChart.occupied;
+
+  const ctx2 = document.getElementById('reservationCount').getContext('2d');
+  new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: lotLocation,
+      datasets: [
+        {
+          label: 'Reserved',
+          data: occupied,
+          backgroundColor: 'rgba(110, 27, 100, 0.9)'
+        },
+        {
+          label: 'Available',
+          data: available,
+          backgroundColor: 'rgba(175, 214, 34, 0.9)'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Occupied/Available Spots per Lot',
+          font: {
+            size: 24,
+            weight: 'bold'
+          },
+          color: '#000',
+          padding: {
+            top: 10,
+            bottom: 20
+          }
+        },
+        legend: {
+          labels: {
+            font: {
+              size: 14
+            },
+            color: '#333'
+          }
+        }
+      }
+      ,
+      scales: {
+        x: {
+          stacked: true,
+          title: {
+            display: true,
+            text: "Parking Lots",
+            color: '#000',
+            font: {
+              size: 16,
+              weight: 'bold'
+            }
+
+          }
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Available/Occupied Count",
+            color: '#000',
+            font: {
+              size: 16,
+              weight: 'bold'
+            }
+
+          }
+        }
+      }
+    }
+  });
+</script>
+
+{% endblock %}

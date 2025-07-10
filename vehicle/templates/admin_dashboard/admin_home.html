@@ -4,18 +4,21 @@ Home
 {% endblock %}
 
 {% block content %}
+<div class="position-relative mt-5 mb-4">
+    <h1 class="text-center">Parking Lots</h1>
+    <!-- Create Lot Modal trigger-->
+    <button type="button" class="btn btn-dark position-absolute top-0 end-0 createLot" data-bs-toggle="modal"
+        data-bs-target="#createLotModal" style="margin-top: 4px; margin-right: 150px;">
+        + Create Parking Lot
+    </button>
+</div>
+
 <div class="text-center">
-    <h1 class="mt-5 mb-4">Parking Lots</h1>
     <div class="row justify-content-center">
         {% for lot in lots %}
         {% include 'components/lot_card.html' %}
         {% endfor %}
     </div>
-
-    <!-- Create Parking Lot Modal trigger -->
-    <button type="button" class="btn btn-dark mt-3" data-bs-toggle="modal" data-bs-target="#createLotModal">
-        + Create Parking Lot
-    </button>
 </div>
 
 <!-- Create Parking Lot Modal -->

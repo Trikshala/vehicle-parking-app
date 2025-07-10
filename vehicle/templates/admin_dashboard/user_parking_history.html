@@ -36,13 +36,13 @@ Parking History
 
                     {% if reservation.actual_checkout_time %}
                     <td>{{reservation.actual_checkout_time.strftime('%Y-%m-%d %H:%M:%S')}}</td>
-                    <td>{{reservation.parking_duration}} Hrs</td>
-                    <td>₹ {{reservation.total_cost}}</td>
+                    <td>{{reservation.parking_duration}}</td>
+                    <td>₹ {{reservation.final_cost}}</td>
                     <td><label style="color: lightpink;">Completed</label></td>
 
                     {% else %}
                     <td>---</td>
-                    <td>{{reservation.parking_duration}} Hrs (so far)</td>
+                    <td>{{reservation.parking_duration}} (so far)</td>
                     <td>₹ {{reservation.total_cost}} (ongoing)</td>
                     <td><label style="color: lightgreen;">Active</label></td>
 

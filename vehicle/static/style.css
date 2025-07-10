@@ -1,5 +1,13 @@
 body {
-    background-color: #94B4C1;
+    background-color: #FFFBEB;
+    font-family: "Inter", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 200;
+    font-style: normal;
+}
+
+h1 {
+    font-weight: bold;
 }
 
 .navbar {
@@ -9,16 +17,51 @@ body {
     background-color: #213448;
 }
 
-.navbar .nav-link,.navbar .navbar-brand, li{
+.navbar .nav-link,
+.navbar .navbar-brand,
+li {
     color: aliceblue !important;
 }
 
+nav {
+    border-bottom: 3px solid #ccc;
+    border-top: 0px;
+    border-left: 0px;
+    border-right: 0px;
+    width: fit-content;
+}
+
+.form-control,
+input {
+    background-color: #FAF8F1;
+    color: #1E2A38;
+    border: 2px solid #3F6E8C;
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 1rem;
+}
+
 .btn {
-    /* background-color: #213448 !important;
-    color: aliceblue; */
-    padding-right: 8%;
+    padding-left: 4%;
+    padding-right: 4%;
     margin-right: 25px;
     align-items: center;
+}
+
+.card-body {
+    background-color: #FFFFD0;
+    padding-left: 4%;
+    padding-bottom: 3%;
+    padding-right: 4%;
+    padding-top: 4%;
+    border: 2px solid #000;
+}
+
+.card-container {
+    padding-bottom: 1%;
+    padding-top: 1%;
+    margin-left: 1%;
+    margin-right: 1%;
 }
 
 .form-container {
@@ -28,6 +71,15 @@ body {
     width: 80%;
     margin: 0 auto;
 }
+
+.createLot {
+    max-width: 250px;
+    width: 100% !important; 
+    padding: 8px 16px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
 
 .form-container form {
     width: 100%;
@@ -45,21 +97,43 @@ body {
     margin-top: 9px;
 }
 
-.form-login{
+.form-login {
     margin-top: 40px;
 }
 
-p{
+p {
     margin-top: 20px;
 }
 
-hr{
-background-color: #213448;
-height: 5px;
-border: none;
-margin: 40px 0;
+hr {
+    background-color: #213448;
+    height: 5px;
+    border: none;
+    margin: 40px 0;
 }
 
-/* .go-back{
-    width: 10px;
-} */
+#revenueChart,
+#reservationCount,
+#resFreq,
+#avgDur {
+    max-width: 700px;
+    max-height: 500px;
+    width: 100%;
+    height: auto;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.chart-config {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    padding-top: 2%;
+}
+
+.vertical-line {
+    width: 2px;
+    background-color: #000;
+    margin: 0 20px;
+}
