@@ -6,6 +6,47 @@ body {
     font-style: normal;
 }
 
+.welcomeDiv {
+    border: 2px solid #000;
+    max-width: 950px;
+    margin: 110px auto;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.loginDiv {
+    border: 2px solid #000;
+    max-width: 700px;
+    margin: 110px auto;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.registerDiv {
+    border: 2px solid #000;
+    max-width: 700px;
+    margin: 55px auto;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.getStarted {
+    height: auto;
+    padding: 8px 8px 8px 8px;
+}
+
+.welcome-image {
+    max-width: 300px;
+    height: auto;
+    border-radius: 8px;
+    margin-top: 20px;
+    mix-blend-mode: multiply;
+}
+
 h1 {
     font-weight: bold;
 }
@@ -23,12 +64,18 @@ li {
     color: aliceblue !important;
 }
 
-nav {
+.navbar-brand {
+    margin-left: 25px;
+}
+
+nav a {
     border-bottom: 3px solid #ccc;
     border-top: 0px;
     border-left: 0px;
     border-right: 0px;
     width: fit-content;
+    white-space: nowrap;
+    margin-left: 5px;
 }
 
 .form-control,
@@ -74,7 +121,7 @@ input {
 
 .createLot {
     max-width: 250px;
-    width: 100% !important; 
+    width: 100% !important;
     padding: 8px 16px;
     border-radius: 6px;
     display: inline-block;

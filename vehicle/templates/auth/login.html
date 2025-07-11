@@ -4,27 +4,28 @@ Login page
 {% endblock%}
 
 {% block content%}
-<h1 class="text-center mt-5">Login to your Account</h1>
-<div class="container mt-3">
-  </div>
-<div class="form-container form-login">
-<form class="form-main" method="POST">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">
-        {{form.username.label()}} <br>
-        {{form.username(class="form-control", placeholder="User Name")}}
-    </div>
-    
-    <div class="mb-3">
-        {{form.pass_1.label()}}<br>
-        {{form.pass_1(class="form-control", placeholder="Enter Password")}}
-    </div>
-    <br>
-    {{ form.submit(class="form-submit btn btn-lg btn-block btn-primary") }}
-</form>
 
+<div class="loginDiv">
+    <h1 class="text-center mt-5">Login to your Account</h1>
+    <div class="form-container form-login">
+        <form class="form-main" method="POST">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{form.username.label()}} <br>
+                {{form.username(class="form-control", placeholder="User Name")}}
+            </div>
+
+            <div class="mb-3">
+                {{form.pass_1.label()}}<br>
+                {{form.pass_1(class="form-control", placeholder="Enter Password")}}
+            </div>
+            <br>
+            {{ form.submit(class="form-submit btn btn-lg btn-block btn-primary") }}
+        </form>
+
+    </div>
+    <p class="text-center text-muted">Don't have an account? <a href="{{url_for('register_page')}}">
+            Register Now</a>
+    </p>
 </div>
-<p class="text-center text-muted">Don't have an account? <a href="{{url_for('register_page')}}">
-    Register Now</a>
-</p>
 {% endblock %}

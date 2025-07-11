@@ -82,45 +82,74 @@ def user_required(f):
 
 # Admin routes
 
-@app.route('/admin/home', methods=["GET","POST"])
+
+@app.route('/admin/home', methods=["GET", "POST"])
 @login_required
 @admin_required
 def admin_home():
-    lots = ParkingLot.query.options(joinedload(ParkingLot.parking_spots.and_(ParkingSpot.spot_id))).all()
+    lots = ParkingLot.query.options(joinedload(ParkingLot.parking_spots)).all()
+
     for lot in lots:
+        lot.parking_spots = [spot for spot in lot.parking_spots if spot.spot_index < lot.max_spots]
         lot.occupied = sum(1 for spot in lot.parking_spots if spot.status == 'O')
+
     reservations = Reservation.query.all()
+
     form = CreateParkingLotForm()
     delete_form = DeleteParkingLotForm()
-    edit_form = {}
-    for lot in lots:
-        edit_form[lot.lot_id] = CreateParkingLotForm(obj = lot)
-    if form.validate_on_submit():
-        new_lot = ParkingLot(primary_location = form.primary_location.data, full_address = form.full_address.data, pincode= form.pincode.data,cost_per_unit = float(form.cost_per_unit.data), max_spots = form.max_spots.data )
+    edit_form = {lot.lot_id: CreateParkingLotForm(obj=lot) for lot in lots}
+
+    if request.method == "POST" and form.validate_on_submit():
+        new_lot = ParkingLot(primary_location=form.primary_location.data,full_address=form.full_address.data,pincode=form.pincode.data,cost_per_unit=float(form.cost_per_unit.data),max_spots=form.max_spots.data)
         db.session.add(new_lot)
         db.session.flush()
-        for index in range(new_lot.max_spots):
-            new_spot = ParkingSpot(status = 'A',lot_id=new_lot.lot_id, spot_index=index)
-            db.session.add(new_spot)
+
+        existing_spots = ParkingSpot.query.filter_by(lot_id=new_lot.lot_id).count()
+
+        if existing_spots > 0:
+            db.session.rollback()
+            flash("Something went wrong: This new lot already had spots. Cancelling operation.", "danger")
+            return redirect(url_for('admin_home'))
+
+        for i in range(new_lot.max_spots):
+            db.session.add(ParkingSpot(status='A', lot_id=new_lot.lot_id, spot_index=i))
+
         db.session.commit()
-        flash(f'Parking Lot Creation Successful! ', category='success')
+        flash('Parking Lot Creation Successful!', category='success')
         return redirect(url_for('admin_home'))
-    if form.errors != {} :
+
+    if form.errors:
         for field_errors in form.errors.values():
             for error_message in field_errors:
                 flash(f'There was an error creating the lot: {error_message}', category='danger')
-    return render_template('admin_dashboard/admin_home.html', user = current_user, form=form, lots=lots, delete_form = delete_form, edit_form = edit_form, reservations=reservations)
 
-@app.route('/admin/delete_lot/<int:lot_id>', methods = ["POST"])
+    return render_template('admin_dashboard/admin_home.html',user=current_user,form=form,lots=lots,delete_form=delete_form,edit_form=edit_form,reservations=reservations)
+
+
+@app.route('/admin/delete_lot/<int:lot_id>', methods=["POST"])
 @login_required
 @admin_required
 def delete_lot(lot_id):
-    lot = ParkingLot.query.get_or_404(lot_id)
-    ParkingSpot.query.filter_by(lot_id = lot_id).delete()
-    db.session.delete(lot)
+    lot_to_delete = ParkingLot.query.get_or_404(lot_id)
+
+    for spot in lot_to_delete.parking_spots:
+        if spot.status == 'O':
+            flash("Cannot delete the lot. One or more spots are currently occupied.", "danger")
+            return redirect(url_for('admin_home'))
+
+    for spot in lot_to_delete.parking_spots:
+        for res in spot.reservations:
+            res.archived_primary_location = lot_to_delete.primary_location
+            res.archived_spot_id = spot.spot_id
+            res.archived_lot_id = lot_to_delete.lot_id
+
     db.session.commit()
-    flash(f"The parking lot has been successfully deleted.", category='success')
+    db.session.delete(lot_to_delete)
+    db.session.commit()
+
+    flash("Parking lot deleted successfully.", "success")
     return redirect(url_for('admin_home'))
+
 
 @app.route('/admin/edit_lot/<int:lot_id>', methods=["POST"])
 @login_required
@@ -140,7 +169,7 @@ def edit_lot(lot_id):
         occupied_spots = ParkingSpot.query.filter_by(lot_id=lot.lot_id, status='O').count() or 0
 
         if new_max_spots < occupied_spots:
-            flash(f"Cannot set max spots to {new_max_spots} as {occupied_spots} spot(s) are currently occupied.", "danger")
+            flash(f"Cannot reduce max spots to {new_max_spots} as {occupied_spots} spot(s) are occupied.", "danger")
             return redirect(url_for('admin_home'))
 
         if occupied_spots > 0 and float(new_cost) != float(lot.cost_per_unit):
@@ -154,20 +183,31 @@ def edit_lot(lot_id):
         lot.full_address = form.full_address.data
         lot.pincode = form.pincode.data
 
-
         if new_max_spots > old_max_spots:
-            for _ in range(new_max_spots - old_max_spots):
-                new_spot = ParkingSpot(status='A', lot_id=lot.lot_id)
-                db.session.add(new_spot)
+            existing_indexes = {s.spot_index for s in lot.parking_spots}
+            for index in range(old_max_spots, new_max_spots):
+                if index not in existing_indexes:
+                    new_spot = ParkingSpot(status='A', lot_id=lot.lot_id, spot_index=index)
+                    db.session.add(new_spot)
 
         elif new_max_spots < old_max_spots:
-            spots_to_delete = ParkingSpot.query.filter_by(lot_id=lot.lot_id).order_by(ParkingSpot.spot_id.desc()).limit(old_max_spots - new_max_spots).all()
-            for spot in spots_to_delete:
+            deletable_spots = ParkingSpot.query.filter_by(lot_id=lot.lot_id, status='A')\
+                .order_by(ParkingSpot.spot_index.desc()).all()
+
+            to_delete = deletable_spots[:old_max_spots - new_max_spots]
+
+            for spot in to_delete:
+                if spot.status != 'A':  
+                    flash(f"Cannot delete Spot {spot.spot_index} as it is occupied.", "danger")
+                    return redirect(url_for('admin_home'))
+                for res in spot.reservations:
+                    res.archived_spot_id = spot.spot_id
+                    res.archived_lot_id = lot.lot_id
+                    res.archived_primary_location = lot.primary_location
                 db.session.delete(spot)
 
         db.session.commit()
         flash("Parking Lot Updated Successfully!", "success")
-
 
     else:
         for field, errors in form.errors.items():
@@ -175,7 +215,6 @@ def edit_lot(lot_id):
                 flash(f"Error in {field}: {error}", "danger")
 
     return redirect(url_for('admin_home'))
-
 
 @app.route('/admin/users')
 @login_required
@@ -264,42 +303,54 @@ def admin_search():
 @login_required
 @admin_required
 def admin_summary():
-    lots = ParkingLot.query.all()
-    revenue_data = defaultdict(float)
-    for lot in lots:
-        total_revenue = 0
-        for spot in lot.parking_spots:
-            for reservation in spot.reservations:
-                total_revenue+=reservation.final_cost or 0
-        revenue_data[lot.lot_id] = {
-           "label" : f"{lot.primary_location} (ID:{lot.lot_id})",
-           "value" : total_revenue
-        }
-    
+
+    # Revenue Generated Bar Graph Data
+    reservations = Reservation.query.all()
+    revenue_data = {}
+
+    for res in reservations:
+        if res.final_cost is None:
+            continue
+        if res.spot and res.spot.lot:
+            lot_id = res.spot.lot.lot_id
+            label = f"{res.spot.lot.primary_location} (ID: {lot_id})"
+        else:
+            lot_id = res.archived_lot_id or -1
+            label = f"{res.archived_primary_location or 'Deleted Lot'} (ID: {res.archived_lot_id}) (Deleted)"
+
+        if lot_id not in revenue_data:
+            revenue_data[lot_id] = {
+                "label": label,
+                "value": 0
+            }
+
+        revenue_data[lot_id]["value"] += res.final_cost or 0
+
     chart_data = {
-        "labels":[x["label"] for x in revenue_data.values()],
-        "values": [x["value"] for x in revenue_data.values()]
+        "labels": [v["label"] for v in revenue_data.values()],
+        "values": [round(v["value"], 2) for v in revenue_data.values()]
     }
-    
+
+    # Occupied/Available Spot distribution Bar Graph Data
     reservation_dist = {}
+    lots = ParkingLot.query.all()
     for lot in lots:
         occupied_count = 0
         total = lot.max_spots
         for spot in lot.parking_spots:
             if spot.status == 'O':
-                occupied_count+=1
-        reservation_dist[lot.lot_id] = {'label': f"{lot.primary_location} (ID:{lot.lot_id})",
-                                        'available':(total - occupied_count), 
-                                        'occupied': occupied_count
-                                        }
+                occupied_count += 1
+        reservation_dist[lot.lot_id] = {'label': f"{lot.primary_location} (ID:{lot.lot_id})", 'available': total - occupied_count,
+            'occupied': occupied_count}
 
     second_chart = {
-    "labels": [v['label'] for v in reservation_dist.values()],
-    "available": [v['available'] for v in reservation_dist.values()],
-    "occupied": [v['occupied'] for v in reservation_dist.values()]
+        "labels": [v['label'] for v in reservation_dist.values()],
+        "available": [v['available'] for v in reservation_dist.values()],
+        "occupied": [v['occupied'] for v in reservation_dist.values()]
     }
 
-    return render_template('admin_dashboard/admin_summary.html', chart_data=chart_data, second_chart = second_chart)
+    return render_template('admin_dashboard/admin_summary.html',chart_data=chart_data, second_chart=second_chart)
+
 
 
 # User routes
@@ -423,19 +474,24 @@ def edit_user_profile():
 @user_required
 def user_summary():
     reservations = Reservation.query.all()
-    res_freq = defaultdict(float)
     res_freq = {}
 
     for res in reservations:
-        if res.user_id == current_user.id:
+        if res.user_id != current_user.id:
+            continue
+        if res.spot and res.spot.lot:
             lot_id = res.spot.lot.lot_id  
-            if lot_id in res_freq:
+            label = f"{res.spot.lot.primary_location} (ID: {lot_id})"
+        else:
+            lot_id = res.archived_lot_id if res.archived_lot_id is not None else -1
+            label = f"{res.archived_primary_location or "Deleted lot"}" + " (Deleted) " + "(ID: {lot_id})"
+        if lot_id in res_freq:
                 res_freq[lot_id]['frequency'] += 1
-            else:
-                res_freq[lot_id] = {
-                    'label': f"{res.spot.lot.primary_location} (ID: {lot_id})",
-                    'frequency': 1
-                }
+        else:
+            res_freq[lot_id] = {
+                'label': label,
+                'frequency': 1
+            }
 
     user_res = {
         "lots" : [v['label'] for v in res_freq.values()],
@@ -444,15 +500,19 @@ def user_summary():
 
     duration_data = defaultdict(list)
     for res in reservations:
-        if res.user_id == current_user.id:
-            start = res.checkin_time
-            if res.actual_checkout_time:
-                end = res.actual_checkout_time
-            else:
-                end = datetime.now()
-            duration = (end - start).total_seconds()/60
-            lot_label = f"{res.spot.lot.primary_location} (ID: {res.spot.lot.lot_id})"
-            duration_data[res.spot.lot.lot_id].append((lot_label, duration))
+        if res.user_id != current_user.id:
+            continue
+        if res.spot and res.spot.lot:
+            lot_id = res.spot.lot.lot_id
+            lot_label = f"{res.spot.lot.primary_location} (ID: {lot_id})"
+        else:
+            lot_id = res.archived_lot_id if res.archived_lot_id is not None else -1
+            lot_label = (res.archived_primary_location or "Deleted Lot") + " (Deleted)"
+        start = res.checkin_time
+        end = res.actual_checkout_time or datetime.now()
+        duration = (end - start).total_seconds()/60
+        
+        duration_data[lot_id].append((lot_label, duration))
 
     avg_dur_data = {
         'labels' : [],

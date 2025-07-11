@@ -28,14 +28,14 @@
                             <div class="modal-body">
                                 ID: <label>{{spot.spot_id}} </label><br>
                                 {% if spot.status == 'O' %}
-                                Spot Status : <button type="button" class="btn btn-dark" data-bs-toggle="modal"
+                                Spot Status : <button type="button" class="btn btn-danger" data-bs-toggle="modal"
                                     data-bs-target="#viewReservationModal{{ spot.spot_id }}">{{spot.status}}</button>
                                 {% else %}
-                                Spot Status : <button type="button" class="btn btn-dark">{{spot.status}}</button>
+                                Spot Status : <button type="button" class="btn btn-success">{{spot.status}}</button>
                                 {% endif %}
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-dark" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-dark rounded" data-bs-dismiss="modal">Close</button>
                             </div>
                         </div>
                     </div>
@@ -53,7 +53,7 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                                     aria-label="Close"></button>
                             </div>
-                            <div class="modal-body">
+                            <div class="modal-body text-start">
                                 {% set reservations_for_spot = reservations | selectattr("spot_id", "equalto",
                                 spot.spot_id) | list %}
                                 {% set sorted_reservations = reservations_for_spot |
@@ -74,16 +74,16 @@
                                 {% endif %}
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-dark" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-dark rounded" data-bs-dismiss="modal">Close</button>
                             </div>
                         </div>
                     </div>
                 </div>
                 {% endfor %}
             </div>
-            <button type="button" class="btn btn-dark mb-2 text-center" data-bs-toggle="modal"
+            <button type="button" class="btn btn-dark mb-2 text-center rounded" data-bs-toggle="modal"
                 data-bs-target="#updateModal{{ lot.lot_id }}"> Edit Lot</button>
-            <button type="button" class="btn btn-dark mb-2 text-center" data-bs-toggle="modal"
+            <button type="button" class="btn btn-dark mb-2 text-center rounded" data-bs-toggle="modal"
                 data-bs-target="#deleteModal{{ lot.lot_id }}">
                 Delete Lot
             </button>
@@ -105,30 +105,30 @@
                 <div class="form-container">
                     <form action="{{ url_for('edit_lot', lot_id=lot.lot_id) }}" method="POST" style="display:inline;">
                         {{ edit_form[lot.lot_id].hidden_tag() }}
-                        <div class="mb-3">
+                        <div class="mb-3 text-start">
                             {{ edit_form[lot.lot_id].primary_location.label() }} <br>
                             {{ edit_form[lot.lot_id].primary_location(class="form-control") }}
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 text-start">
                             {{ edit_form[lot.lot_id].full_address.label() }}<br>
                             {{ edit_form[lot.lot_id].full_address(class="form-control") }}
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 text-start">
                             {{ edit_form[lot.lot_id].pincode.label() }}<br>
                             {{ edit_form[lot.lot_id].pincode(class="form-control") }}
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 text-start">
                             {{ edit_form[lot.lot_id].cost_per_unit.label() }}<br>
                             {{ edit_form[lot.lot_id].cost_per_unit(class="form-control") }}
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 text-start">
                             {{ edit_form[lot.lot_id].max_spots.label() }}<br>
                             {{ edit_form[lot.lot_id].max_spots(class="form-control") }}
                         </div>
                         <div class="modal-footer">
                             {{ edit_form[lot.lot_id].submit(class="form-submit btn btn-lg btn-block
-                            btn-primary", value="Update Parking Lot") }}
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            btn-primary", value="Update Parking Lot") }} 
+                            <button type="button" class="btn btn-secondary rounded" data-bs-dismiss="modal">Cancel</button>
                         </div>
                     </form>
                 </div>

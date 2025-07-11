@@ -40,23 +40,28 @@ class ParkingLot(db.Model):
     pincode = db.Column(db.String(6), nullable = False)
     max_spots = db.Column(db.Integer(), nullable = False)
     cost_per_unit = db.Column(db.Integer(), nullable = False)
-    parking_spots = db.relationship('ParkingSpot', backref = 'lot', lazy= True)
+    parking_spots = db.relationship('ParkingSpot', backref = 'lot', lazy= True, cascade='all, delete-orphan',
+    passive_deletes=True)
 
     def available_spots(self):
         return sum(1 for spot in self.parking_spots if spot.status == 'A')
 
 
 class ParkingSpot(db.Model):
+    __tablename__ = 'parking_spot'
     spot_id = db.Column(db.Integer(), primary_key = True)
     status = db.Column(db.String(1), default = 'A')
-    lot_id = db.Column(db.Integer(), db.ForeignKey('parking_lot.lot_id'))
-    spot_index = db.Column(db.Integer)
-    reservations = db.relationship('Reservation', backref = 'spot', lazy = True)
+    lot_id = db.Column(db.Integer(), db.ForeignKey('parking_lot.lot_id', ondelete='CASCADE'), nullable = False)
+    spot_index = db.Column(db.Integer,  nullable= False)
+    reservations = db.relationship('Reservation', backref = 'spot', lazy = True, passive_deletes=True)
+    __table_args__ = (
+        db.UniqueConstraint('lot_id', 'spot_index', name='unique_lot_spot_index'),
+    )
 
 class Reservation(db.Model):
     r_id = db.Column(db.Integer(), primary_key = True)
     user_id = db.Column(db.Integer(), db.ForeignKey('user.id'))
-    spot_id = db.Column(db.Integer(), db.ForeignKey('parking_spot.spot_id'))
+    spot_id = db.Column(db.Integer(), db.ForeignKey('parking_spot.spot_id',name='fk_reservation_spot', ondelete = 'SET NULL'), nullable = True)
     checkin_time = db.Column(db.DateTime, default = datetime.utcnow)
     checkout_time = db.Column(db.DateTime, nullable = False)
     actual_checkout_time = db.Column(db.DateTime)
@@ -65,6 +70,9 @@ class Reservation(db.Model):
     cost_per_unit = db.Column(db.Float, nullable = False)
     estimated_cost = db.Column(db.Float, nullable = True)
     final_cost = db.Column(db.Float, nullable=True)
+    archived_primary_location = db.Column(db.String(100))
+    archived_spot_id = db.Column(db.Integer())
+    archived_lot_id = db.Column(db.Integer())
 
     @property
     def total_cost(self):

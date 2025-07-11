@@ -24,7 +24,7 @@
             {% if current_user.is_admin %}
             <a class="navbar-brand" href="{{url_for('admin_home')}}"><h4>Admin Dashboard</h4></a>
             {% else %}
-            <a class="navbar-brand" href="{{url_for('user_home')}}"><h4>User Dashboard</div>h4></a>
+            <a class="navbar-brand" href="{{url_for('user_home')}}"><h4>User Dashboard</h4></a>
             {% endif %}
             {% else %}
             <a class="navbar-brand" href="{{url_for('welcome')}}"> <h4>Vehicle Parking Application</h4></a>
@@ -62,7 +62,7 @@
                         <a class="nav-link" href="{{url_for('user_summary')}}">Summary</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{url_for('edit_user_profile')}}">Edit Profile</a>
+                        <a class="nav-link" href="{{url_for('edit_user_profile')}}" >Edit Profile</a>
                     </li>
                     {% endif %}
                     <li class="nav-item">

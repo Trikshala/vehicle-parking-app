@@ -7,7 +7,7 @@
     {% if reservations %}
     <div class="d-flex justify-content-center mt-5">
         <div class="w-auto">
-            <h2 class="text-center">Recent Parking History</h2>
+            <h1 class="text-center">Recent Parking History</h1>
             <br>
             <table class="table table-hover table-dark" align="center">
                 <thead>
@@ -23,7 +23,8 @@
                     {% for reservation in reservations %}
                     <tr>
                         <td>{{ reservation.r_id}}</td>
-                        <td>{{reservation.spot.lot.primary_location}}</td>
+                        <td>{{reservation.spot.lot.primary_location if reservation.spot and reservation.spot.lot
+                            else reservation.archived_primary_location + ' (Deleted)' or 'Deleted_Lot'}}</td>
                         <td>{{reservation.nameplate_num}}</td>
                         <td>
                             {% if reservation.checkin_time %}
@@ -82,13 +83,13 @@
 
     <hr>
 
-    <h1 class="mt-5 text-center">Search Available Parking lots</h1>
+    <h2 class="mt-5 text-center ">Search Available Parking lots</h2>
 
     <div class="form-container mt-4">
         <form action="{{ url_for('user_home') }}" method="POST"
             class="d-flex justify-content-center align-items-center gap-3">
             {{ form.hidden_tag() }}
-            <span class="me-2 fs-4">{{ form.location.label(class="form-label m-0") }}</span>
+            <span class="me-2 fs-5">{{ form.location.label(class="form-label m-0") }}</span>
             {{ form.location(class="form-select w-auto") }}
             {{ form.submit(class="btn btn-primary") }}
         </form>
@@ -97,7 +98,7 @@
     {% if lots %}
     <div class="d-flex justify-content-center mt-5">
         <div class="w-auto">
-            <h2 class="text-center">Available Parking Lots in {{ form.location.data }}</h2>
+            <h4 class="text-center">Available Parking Lots in {{ form.location.data }}</h4>
             <br>
             <table class="table table-hover table-dark" align="center">
                 <thead>
@@ -130,46 +131,46 @@
                         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h1 class="modal-title fs-5" id="bookingModalLabel{{ loop.index }}">Book Spot in Lot
-                                        {{ item.lot_id }}</h1>
+                                    <h1 class="modal-title fs-5" id="bookingModalLabel{{ loop.index }}">Book Spot in  Lot 
+                                        - {{ item.lot_id }}</h1>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                                         aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <form method="POST" action="{{ url_for('book_spot') }}">
                                         {{ form.hidden_tag() }}
-                                        <div class="mb-2">
+                                        <div class="mb-2 text-start">
                                             <label for="lot_id{{ loop.index }}">Lot ID</label>
                                             <input type="text" name="lot_id" value="{{ item.lot_id }}" readonly
                                                 class="form-control mb-2">
                                         </div>
-                                        <div class="mb-2">
+                                        <div class="mb-2 text-start">
                                             <label for="spot_id{{ loop.index }}">Spot ID</label>
                                             <input type="text" name="spot_id" value="{{ item.spot_id }}" readonly
                                                 class="form-control mb-2">
                                         </div>
-                                        <div class="mb-2">
+                                        <div class="mb-2 text-start">
                                             <label for="user_id{{ loop.index }}">User ID</label>
                                             <input type="text" name="user_id" value="{{ current_user.id }}" readonly
                                                 class="form-control mb-2">
                                         </div>
-                                        <div class="mb-2">
+                                        <div class="mb-2 text-start">
                                             <label for="cost_per_unit{{ loop.index }}">Cost Per Hour</label>
                                             <input type="text" name="cost_per_hour" value="{{ item.cost_per_unit }}"
                                                 readonly class="form-control mb-2" id="costPerHour{{ loop.index }}">
                                         </div>
-                                        <div class="mb-2">
+                                        <div class="mb-2 text-start">
                                             <label for="no_of_hours{{ loop.index }}">Number of Hours</label>
                                             <input type="number" name="no_of_hours" id="no_of_hours{{ loop.index }}"
                                                 class="form-control" min="1" required>
                                         </div>
-                                        <div class="mb-2">
+                                        <div class="mb-2 text-start">
                                             <label for="vehicle_model{{ loop.index }}">Vehicle Model</label>
                                             <input type="text" name="vehicle_model" id="vehicle_model{{ loop.index }}"
                                                 class="form-control" required>
                                         </div>
 
-                                        <div class="mb-2">
+                                        <div class="mb-2 text-start">
                                             <label for="vehicle_number{{ loop.index }}">Number Plate</label>
                                             <input type="text" name="vehicle_number" id="vehicle_number{{ loop.index }}"
                                                 class="form-control" required>

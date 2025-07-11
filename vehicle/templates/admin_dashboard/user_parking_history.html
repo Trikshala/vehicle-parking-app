@@ -7,7 +7,7 @@ Parking History
 {% if reservations %}
 <div class="table-hover d-flex justify-content-center" style="margin-top: 30px; margin-left: 30px;">
     <div class="col-8 text-center">
-        <h2 class="text-center">Parking History for {{user.full_name}}</h2>
+        <h1 class="text-center mt-3">Parking History for {{user.full_name}}</h1>
         <br>
         <table class="table table-hover table-dark justify-content-center">
             <thead>
@@ -29,8 +29,10 @@ Parking History
                 <tr>
                     <td>{{ loop.index }}</td>
                     <td>{{ reservation.r_id }}</td>
-                    <td>{{reservation.spot.lot.primary_location}}</td>
-                    <td>{{reservation.spot.spot_id}}</td>
+                    <td>{{reservation.spot.lot.primary_location if reservation.spot and reservation.spot.lot
+                          else (reservation.archived_primary_location or 'Deleted Lot') + ' (Deleted)'}}</td>
+                    <td>{{reservation.spot.spot_id if reservation.spot
+                        else reservation.archived_spot_id or 'N/A'}}</td>
                     <td>{{reservation.nameplate_num}}</td>
                     <td>{{reservation.checkin_time.strftime('%Y-%m-%d %H:%M:%S')}}</td>
 
