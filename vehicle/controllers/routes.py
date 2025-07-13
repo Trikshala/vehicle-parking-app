@@ -7,6 +7,7 @@ from vehicle.models import User, ParkingLot, ParkingSpot, Reservation
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.orm import joinedload
 from collections import defaultdict
+from sqlalchemy import desc
 
 @app.route('/')
 @app.route('/home')
@@ -361,7 +362,7 @@ def admin_summary():
 def user_home():
     form = SearchParkingLot()
     release_form = ReleaseSpotForm()
-    reservations = Reservation.query.filter_by(user_id=current_user.id).all()
+    reservations = Reservation.query.filter_by(user_id=current_user.id).order_by(desc(Reservation.r_id)).all()
     areas = db.session.query(ParkingLot.primary_location).distinct().all()
     form.location.choices = [(area[0], area[0]) for area in areas]
 
